@@ -48,7 +48,16 @@ container_id="$(docker ps --filter "ancestor=${container}" --format='{{.ID}}')"
 echo "INFO: Docker container ${container} (${container_id}} is running."
 
 container_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${container_id})"
-export JAEGER_ENDPOINT=http://${container_ip}:14268/api/traces
+
+export JAEGER_SAMPLER_TYPE=const 
+export JAEGER_SAMPLER_PARAM=1 
+export JAEGER_SAMPLER_MANAGER_HOST_PORT=${container_ip}:5778 
+export JAEGER_REPORTER_LOG_SPANS=true 
+export JAEGER_AGENT_HOST=${container_ip}
+export JAEGER_AGENT_PORT=6831 
+export JAEGER_REPORTER_FLUSH_INTERVAL=1000 
+export JAEGER_REPORTER_MAX_QUEUE_SIZE=100 
+export JAEGER_ENDPOINT=http://${JAEGER_AGENT_HOST}:14268/api/traces
 
 echo "INFO: The Jaeger endpoint is ${JAEGER_ENDPOINT}."
 

@@ -50,6 +50,7 @@ public final class Tracing {
      *          The tracing implementation.
      */
     public static JaegerTracer init(final String service) {
+
         // The sampler always makes the same decision for all traces. It samples all traces. If the parameter were
         // zero, it would sample no traces.
         final SamplerConfiguration samplerConfiguration = SamplerConfiguration.fromEnv()
@@ -61,10 +62,12 @@ public final class Tracing {
 
         // The configuration encapsulates the configuration for sampling and reporting.
         final Configuration configuration = new Configuration(service).withSampler(samplerConfiguration)
-                                                                     .withReporter(reporterConfiguration);
+                                                                      .withReporter(reporterConfiguration);
 
         // Create the tracer from the configuration.
-        return configuration.getTracer();
+        final JaegerTracer jaegerTracer = configuration.getTracer();
+        Tracing.debug(service, "init", "Created tracer: " + jaegerTracer.toString() + "for service " + service + ".");
+        return jaegerTracer;
     }
 
     /**

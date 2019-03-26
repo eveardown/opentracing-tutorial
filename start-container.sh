@@ -16,6 +16,8 @@ command_line+=("run")
 
 # -d : start a detached process for the container.
 command_line+=("-d")
+command_line+=("--name")
+command_line+=("jaeger_all_in_one")
 
 # --rm : delete the container when it stops.
 command_line+=("--rm")
