@@ -5,36 +5,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  >/dev/null 2>&1 &&  pwd )" || {
     exit 1
 }
 
-git_repo_url="https://github.com/yurishkuro/opentracing-tutorial"
-repo_dir="${DIR}/opentracing-tutorial"
-
-if [[ ! -d "${repo_dir}" ]]; then
-    git_repo_url="https://github.com/yurishkuro/opentracing-tutorial"
-    echo "Cloning ${git_repo_url} into ${repo_dir} ..."
-    git_repo_url="https://github.com/yurishkuro/opentracing-tutorial"
-    git clone "${git_repo_url}" || {
-        echo "Failed to clone Git repository at ${git_repo_url}"
-        exit 1
-    }
-    cd "${repo_dir}" || {
-        echo "Failed to cd to ${repo_dir}."
-        exit 1
-    }
-    echo "Cloned ${git_repo_url} OK."
-else
-    cd "${repo_dir}" || {
-        echo "Failed to cd to ${repo_dir}."
-        exit 1
-    }
-    git pull || {
-        echo "Failed to pull from  ${git_repo_url}."
-        exit 1
-    }
-    echo "Updated repo OK."
-fi
-
 container_name="jaegertracing/all-in-one"
-container_version=1.7
+container_version=1.8
 container="${container_name}:${container_version}"
 echo "Starting docker container for ${container} ..."
 declare -a command_line
@@ -56,6 +28,7 @@ command_line+=("-p5778:5778")
 command_line+=("-p16686:16686")
 command_line+=("-p14268:14268")
 command_line+=("-p9411:9411")
+command_line+=("-p5022:22")
 
 command_line+=("${container}")
 
