@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import lib.Debug;
 import lib.Tracing;
 
 /**
@@ -54,14 +55,14 @@ public class PublisherStep2Resource {
         //  Start logging on the server in the context of the client span.
         try (Scope scope = Tracing.startServerSpan(tracer, httpHeaders, "publish")) {
 
-            Tracing.debugScope("publish", "server:publish", "Operation start.", scope);
+            Debug.debugScope("publish", "server:publish", "Operation start.", scope);
 
             System.out.println(helloString);
             // Log the successful publish operation.
             final Span span = scope.span();
             span.log(ImmutableMap.of("event", "server-println", "value", helloString));
 
-            Tracing.debug("publish", "server:publish", "Operation finished.");
+            Debug.debug("publish", "server:publish", "Operation finished.");
             return "published";
         }
     }

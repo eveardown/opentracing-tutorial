@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+import lib.Debug;
 import lib.Tracing;
 
 /**
@@ -55,14 +56,14 @@ public class FormatterStep2Resource {
         //  Start logging on the server in the context of the client span.
         try (final Scope scope = Tracing.startServerSpan(tracer, httpHeaders, "format")) {
 
-            Tracing.debugScope("format", "server:format", "operationStart", scope);
+            Debug.debugScope("format", "server:format", "operationStart", scope);
 
             // Log the successful format operation.
             final String helloString = String.format("Hello, %s!", helloTo);
             final Span span = scope.span();
             span.log(ImmutableMap.of("event", "server-string-format", "value", helloString));
 
-            Tracing.debug("format", "server:format", " operation finished.");
+            Debug.debug("format", "server:format", " operation finished.");
             return helloString;
         }
     }

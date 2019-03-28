@@ -6,7 +6,6 @@ package lesson03.exercise;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Tracer;
 import lib.Tracing;
 
@@ -72,7 +71,7 @@ public class FormatterStep2 extends Application<Configuration> {
 
         // These two lines of code cannot be in a try-with-resources statement because no traces will be sent to
         // the Jaeger agent.
-        final JaegerTracer tracer = Tracing.init("formatter");
+        final Tracer tracer = Tracing.init("formatter");
         new FormatterStep2(tracer).run(args);
     }
 }

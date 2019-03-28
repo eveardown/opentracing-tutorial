@@ -7,12 +7,12 @@ import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 
-import io.jaegertracing.internal.JaegerSpanContext;
-import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Scope;
 import io.opentracing.Span;
+import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
+import lib.Debug;
 import lib.Tracing;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -82,15 +82,15 @@ public class HelloMicroServicesAppStep2 {
         }
         final String helloTo = args[0];
 
-        try (final JaegerTracer tracer = Tracing.init("hello-world")) {
-            new HelloMicroServicesAppStep2(tracer).sayHello(helloTo);
-        }
+        // No need to close a Tracer - when it is built a shutdown hook to close it is added to the Runtime.
+        final Tracer tracer = Tracing.init("hello-world");
+        new HelloMicroServicesAppStep2(tracer).sayHello(helloTo);
     }
 
     /**
-     * The Jaeger tracer instance.
+     * The {@link Tracer} instance.
      */
-    private final JaegerTracer tracer;
+    private final Tracer tracer;
 
     /**
      * The HTTP client.
@@ -98,11 +98,11 @@ public class HelloMicroServicesAppStep2 {
     private final OkHttpClient client;
 
     /**
-     * Create from an instance of {@link io.opentracing.Tracer}.
+     * Create from an instance of {@link Tracer}.
      * @param theTracer
      *          The tracer to use.
      */
-    private HelloMicroServicesAppStep2(final JaegerTracer theTracer) {
+    private HelloMicroServicesAppStep2(final Tracer theTracer) {
         tracer = theTracer;
         client = new OkHttpClient();
     }
@@ -147,12 +147,11 @@ public class HelloMicroServicesAppStep2 {
                 Tags.HTTP_METHOD.set(activeSpan, "GET");
                 Tags.HTTP_URL.set(activeSpan, url.toString());
 
-                final JaegerSpanContext context = JaegerSpanContext.class.cast(activeSpan.context()).withFlags((byte)0x03);
-                tracer.inject(context,
+                tracer.inject(activeSpan.context(),
                               Format.Builtin.HTTP_HEADERS,
                               Tracing.requestBuilderCarrier(requestBuilder));
 
-                Tracing.debugSpan("client:getHttp", activeSpan);
+                Debug.debugSpan("client:getHttp", activeSpan);
             }
 
             // Create the request.
@@ -161,8 +160,7 @@ public class HelloMicroServicesAppStep2 {
             // Send the request.
             final Response response = client.newCall(request).execute();
 
-            System.out.println(Tracing.timestamp() + "  client:getHttp: " + Tracing.getOperationName(activeSpan) +
-                               ": Received response.");
+            Debug.debug(Debug.getOperationName(activeSpan),  "client:getHttp",  "Received response.");
 
             if (response.code() != 200) {
                 throw new RuntimeException("Bad HTTP result: " + response);
@@ -186,12 +184,12 @@ public class HelloMicroServicesAppStep2 {
      */
     private String formatString(final String helloTo) {
         try (final Scope scope = tracer.buildSpan("formatString").startActive(true)) {
-            Tracing.debugScope("format", "client:formatString", "Operation start.", scope);
+            Debug.debugScope("format", "client:formatString", "Operation start.", scope);
 
             // Call the format microservice
             final String helloString = getHttp(ServicePorts.FORMATTER_SERVICE_PORT, "format", "helloTo", helloTo);
             scope.span().log(ImmutableMap.of("event", "string-format", "value", helloString));
-            Tracing.debugScope("format", "client:formatString", "Operation finushed.", scope);
+            Debug.debugScope("format", "client:formatString", "Operation finushed.", scope);
             return helloString;
         }
     }
@@ -204,10 +202,10 @@ public class HelloMicroServicesAppStep2 {
      */
     private void printHello(final String helloString) {
         try (final Scope scope = tracer.buildSpan("printHello").startActive(true)) {
-            Tracing.debugScope("println", "client:printHello", "Operation start", scope);
+            Debug.debugScope("println", "client:printHello", "Operation start", scope);
             final String result = getHttp(ServicePorts.PUBLISHER_SERVICE_PORT, "publish", "helloStr", helloString);
             scope.span().log(ImmutableMap.of("event", "println", "result", result));
-            Tracing.debugScope("println", "client:printHello", "Operation finished.", scope);
+            Debug.debugScope("println", "client:printHello", "Operation finished.", scope);
         }
     }
 
@@ -216,15 +214,6 @@ public class HelloMicroServicesAppStep2 {
      *
      * <p>{@link ImmutableMap#of(Object, Object, Object, Object)} takes arguments of key1, value1, ... keyn, valuen.</p>
      *
-     * <p>This method generates one trace containing three spans like this:</p>
-     *
-     * <pre>
-     * 1 Trace
-     *
-     * hello-world: say-hello d7fefc0                                                                            11.54ms
-     * 3 Spans hello-world (3)                                                                         Today 10:16:40 am
-     *                                                                                                     6 minutes ago
-     * </pre>
      * @param helloTo
      *          The parameter for the message.
      */
@@ -233,19 +222,17 @@ public class HelloMicroServicesAppStep2 {
         // Create the active Span in a Scope.
         try (final Scope scope = tracer.buildSpan("say-hello").startActive(true)) {
 
-            System.out.println("sayHello: scope is " + scope.getClass().getName() + " : " + scope.toString() + " .");
-
             // Tag the span with the message parameter.
             scope.span().setTag("hello-to", helloTo);
 
-            Tracing.debugScope("sayHello", "client:sayHello", "Operation start.", scope);
+            Debug.debugScope("sayHello", "client:sayHello", "Operation start.", scope);
 
             // Create the child span for formatting the message.
             final String helloString = formatString(helloTo);
 
             // Create the child span for printing the message.
             printHello(helloString);
-            Tracing.debugScope("sayHello", "client:sayHello", "Operation finished.", scope);
+            Debug.debugScope("sayHello", "client:sayHello", "Operation finished.", scope);
         }
     }
 }

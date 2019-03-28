@@ -6,7 +6,6 @@ package lesson03.exercise;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Tracer;
 import lib.Tracing;
 
@@ -58,7 +57,6 @@ public class PublisherStep2 extends Application<Configuration> {
         environment.jersey().register(new PublisherStep2Resource(tracer));
     }
 
-
     /**
      * Entry point for the server.
      * @param args
@@ -74,7 +72,7 @@ public class PublisherStep2 extends Application<Configuration> {
         // These two lines of code cannot be in a try-with-resources statement because no traces will be sent to
         // the Jaeger agent.
 
-        final JaegerTracer tracer = Tracing.init("publisher");
+        final Tracer tracer = Tracing.init("publisher");
         new PublisherStep2(tracer).run(args);
     }
 }

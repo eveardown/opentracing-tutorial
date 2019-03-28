@@ -7,9 +7,9 @@ import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 
-import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Scope;
 import io.opentracing.Span;
+import io.opentracing.Tracer;
 import lib.Tracing;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -76,15 +76,14 @@ public class HelloMicroServicesAppStep1 {
         }
         final String helloTo = args[0];
 
-        try (final JaegerTracer tracer = Tracing.init("hello-world")) {
-            new HelloMicroServicesAppStep1(tracer).sayHello(helloTo);
-        }
+        final Tracer tracer = Tracing.init("hello-world");
+        new HelloMicroServicesAppStep1(tracer).sayHello(helloTo);
     }
 
     /**
      * The opentracing tracer instance.
      */
-    private final io.opentracing.Tracer tracer;
+    private final Tracer tracer;
 
     /**
      * The HTTP client.
@@ -96,7 +95,7 @@ public class HelloMicroServicesAppStep1 {
      * @param theTracer
      *          The tracer to use.
      */
-    private HelloMicroServicesAppStep1(final io.opentracing.Tracer theTracer) {
+    private HelloMicroServicesAppStep1(final Tracer theTracer) {
         tracer = theTracer;
         client = new OkHttpClient();
     }
