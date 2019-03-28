@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import com.google.common.collect.ImmutableMap;
 
+import io.jaegertracing.internal.JaegerSpanContext;
 import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -146,7 +147,8 @@ public class HelloMicroServicesAppStep2 {
                 Tags.HTTP_METHOD.set(activeSpan, "GET");
                 Tags.HTTP_URL.set(activeSpan, url.toString());
 
-                tracer.inject(activeSpan.context(),
+                final JaegerSpanContext context = JaegerSpanContext.class.cast(activeSpan.context()).withFlags((byte)0x03);
+                tracer.inject(context,
                               Format.Builtin.HTTP_HEADERS,
                               Tracing.requestBuilderCarrier(requestBuilder));
 

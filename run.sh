@@ -32,20 +32,20 @@ if [ "$(java -version 2>&1 | head -1 | grep '\"1\.[78].\+\"')" = "" ]; then
 fi
 
 container_name="jaegertracing/all-in-one"
-container_version="1.8"
+container_version="1.11"
 container="${container_name}:${container_version}"
 container_id=
 container_id="$(docker ps --filter "ancestor=${container}" --format='{{.ID}}')"
 
 [[ -z "${container_id}" ]] && {
-	${DIR}/start-container.sh || {
+	${DIR}/start-container.sh "${container}" || {
 		echo "ERROR: failed to start the docker container ${container}."
 		exit 1
     }
 	container_id="$(docker ps --filter "ancestor=${container}" --format='{{.ID}}')"
 }
 
-echo "INFO: Docker container ${container} (${container_id}} is running."
+echo "INFO: Docker container ${container} (id: ${container_id}) is running."
 
 container_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${container_id})"
 

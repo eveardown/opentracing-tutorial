@@ -5,12 +5,18 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"  >/dev/null 2>&1 &&  pwd )" || {
     exit 1
 }
 
-container_name="jaegertracing/all-in-one"
-container_version=1.8
-container="${container_name}:${container_version}"
+if [[ -z "$1" ]]; then
+    container_name="jaegertracing/all-in-one"
+    container_version=1.11
+    container="${container_name}:${container_version}"
+else
+	container="$1"
+fi
+
 echo "Starting docker container for ${container} ..."
 declare -a command_line
 command_line+=("docker")
+command_line+=("-D")
 command_line+=("--log-level debug")
 command_line+=("run")
 

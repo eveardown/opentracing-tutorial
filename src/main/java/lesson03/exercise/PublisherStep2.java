@@ -71,8 +71,10 @@ public class PublisherStep2 extends Application<Configuration> {
                            String.valueOf(ServicePorts.PUBLISHER_SERVICE_PORT));
         System.setProperty("dw.server.adminConnectors[0].port", String.valueOf(ServicePorts.PUBLISHER_ADMIN_PORT));
 
-        try (JaegerTracer tracer = Tracing.init("publisher")) {
-            new PublisherStep2(tracer).run(args);
-        }
+        // These two lines of code cannot be in a try-with-resources statement because no traces will be sent to
+        // the Jaeger agent.
+
+        final JaegerTracer tracer = Tracing.init("publisher");
+        new PublisherStep2(tracer).run(args);
     }
 }

@@ -19,7 +19,7 @@
 	<classpathentry kind="lib" path="target/dependency/commons-lang3-3.5.jar"/>
 	<classpathentry kind="lib" path="target/dependency/commons-logging-1.2.jar"/>
 	<classpathentry kind="lib" path="target/dependency/dropwizard-configuration-1.1.4.jar"/>
-	<classpathentry kind="lib" path="target/dependency/dropwizard-core-1.1.4.jar"/>
+	<classpathentry kind="lib" path="target/dependency/dropwizard-core-1.1.4.jar" sourcepath="/home/stevebrown/.m2/repository/io/dropwizard/dropwizard-core/1.1.4/dropwizard-core-1.1.4-sources.jar"/>
 	<classpathentry kind="lib" path="target/dependency/dropwizard-jackson-1.1.4.jar"/>
 	<classpathentry kind="lib" path="target/dependency/dropwizard-jersey-1.1.4.jar"/>
 	<classpathentry kind="lib" path="target/dependency/dropwizard-jetty-1.1.4.jar"/>

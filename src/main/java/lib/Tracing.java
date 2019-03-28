@@ -126,7 +126,7 @@ public final class Tracing {
 
         final Scope scope = spanBuilder.withTag(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_SERVER)
                                        .startActive(true);
-        Tracing.debugScope(operationName, "startServerScope", "started active scope", scope);
+        Tracing.debugScope(operationName, "startServerSpan", "started active scope", scope);
 
         return scope;
     }
