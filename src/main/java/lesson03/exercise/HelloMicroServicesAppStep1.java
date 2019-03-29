@@ -21,7 +21,7 @@ import okhttp3.Response;
  *
  * <p>This example calls microservices to format the message and print the message.</p>
  *
- * <p>This example is based on {@link lesson02.exercise.HelloInProcessContext} with the following changes:</p>
+ * <p>This example is based on {@code lesson02.exercise.HelloInProcessContext} with the following changes:</p>
  *
  * <ul>
  *   <li>Formatting the message and printing the message are delegated to microservices,</li>
