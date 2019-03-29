@@ -7,6 +7,7 @@ import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
 import io.opentracing.Tracer;
+import lib.ServicePorts;
 import lib.Tracing;
 
 /**

@@ -9,6 +9,7 @@ import io.jaegertracing.Configuration;
 import io.jaegertracing.Configuration.ReporterConfiguration;
 import io.jaegertracing.Configuration.SamplerConfiguration;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 
 /**
@@ -17,13 +18,27 @@ import io.opentracing.Tracer;
  * <p>This example creates hierarchical spans.</p>
  * <p>{@link lesson02.exercise.HelloMultipleSingeSpans} has a major issue:</p>
  *
- * <p>We got three spans, but there is a problem here. If we search for the spans in the UI each one will represent a standalone trace with a single span. That's not what we wanted!
-
-What we really wanted was to establish causal relationship between the two new spans to the root span started in main(). We can do that by passing an additional option asChildOf to the span builder:
-
-Copy to ClipboardSpan span = tracer.buildSpan("formatString").asChildOf(rootSpan).startManual();
-
-If we think of the trace as a directed acyclic graph where nodes are the spans and edges are the causal relationships between them, then the ChildOf option is used to create one such edge between span and rootSpan. In the API the edges are represented by SpanReference type that consists of a SpanContext and a label. The SpanContext represents an immutable, thread-safe portion of the span that can be used to establish references or to propagate it over the wire. The label, or ReferenceType, describes the nature of the relationship. ChildOf relationship means that the rootSpan has a logical dependency on the child span before rootSpan can complete its operation. Another standard reference type in OpenTracing is FollowsFrom, which means the rootSpan is the ancestor in the DAG, but it does not depend on the completion of the child span, for example if the child represents a best-effort, fire-and-forget cache write.
+ * <p>We got three spans, but there is a problem here. If we search for the spans in the UI each one will represent a
+ * standalone trace with a single span. That's not what we wanted!</p>
+ *
+ * <p>What we really wanted was to establish causal relationship between the two new spans to the root span started in
+ * {@link #main(String[])}). We can do that by passing an additional option {@code asChildOf} to the span builder.</p>
+ *
+ * <p>A trace can be represented as a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph<a>
+ * (DAG), where nodes are the {@code Span}s and edges are the causal relationships between the spans. The
+ * {@code childOf} option is used to create one such edge between the {@code Span} and the root {@code Span}.</p>
+ *
+ * <p>In the API, the DAG edges are represented by the {@link io.jaegertracing.internal.Reference} type that
+ * consists of a {@link SpanContext} and a label (the {@code type} field of {@code io.jaegertracing.internal.Reference}).
+ * The {@link SpanContext} object is an immutable thread-safe portion of the {@link Span} that can be used to establish
+ * references, or to propagate the span over the wire. The label describes the nature of the relationship.</p>
+ *
+ * <p>A {@code childOf} relationship means that the root {@code Span} has a logical dependency on the child span before
+ * the root {@code Span} can complete its operation.</p>
+ *
+ * <p>Another standard reference type in OpenTracing is {@code followsFrom}, which means the root {@code Span} is the
+ * child span's ancestor in the DAG, but does not depend on the completion of the child span. An  example would be if
+ * the child represents a best-efforts, fire-and-forget request to some other service.</p>
  *
  * <p>This example is based on {@link lesson02.exercise.HelloMultipleSingeSpans}, with the following changes:</p>
  *

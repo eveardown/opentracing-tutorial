@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import io.opentracing.Scope;
 import io.opentracing.Span;
@@ -19,10 +20,17 @@ import io.opentracing.Span;
 public final class Debug {
 
     /**
-     * Cannot instantiate.
+     * Print a debug message.
+     * @param operationName
+     *          The name of the operation in progress.
+     * @param messagePrefix
+     *          The prefix for the message.
+     * @param message
+     *          The message to print.
      */
-    private Debug() {
-        super();
+    public static void debug(final String operationName, final String messagePrefix, final String message) {
+        final String prefix = timestamp() + "  " + operationName + "  " + messagePrefix + ": ";
+        System.out.println(prefix + message);
     }
 
     /**
@@ -60,42 +68,13 @@ public final class Debug {
 
         final io.jaegertracing.internal.JaegerSpan implementation =
                                                             io.jaegertracing.internal.JaegerSpan.class.cast(span);
-        final Map<String, Object> tags = implementation.getTags();
+        debugSpanTags(messagePrefix, operationName, implementation);
 
-        if (tags.size() != 0) {
-            debug(operationName, messagePrefix, "span tags are:");
-            tags.entrySet().forEach(entry -> {
-                debug(operationName, messagePrefix, "Key : " + entry.getKey() + " : Value : " + entry.getValue());
-            });
-        }
-        else {
-            debug(operationName, messagePrefix, "There are no tags in the span.");
-        }
+        debugSpanReferences(messagePrefix, operationName, implementation);
 
-        final List<io.jaegertracing.internal.Reference> references = implementation.getReferences();
-
-        if (references.size() != 0) {
-            debug(operationName, messagePrefix, "span references are:");
-            references.stream().forEach(r -> debug(operationName, messagePrefix, r.toString()));
-        }
-        else {
-            debug(operationName, messagePrefix, "There are no references in the span.");
-        }
-    }
-
-    /**
-     * Get the timestamp for a message.
-     * @return
-     *          The timestamp in the format "{@code HH:mm:ss.SSS}".
-     */
-    public static String timestamp() {
-        final Instant instant = Instant.now();
-        final long timeStampMillis = instant.toEpochMilli();
-        final ZoneId zone = ZoneId.systemDefault();
-        final DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(zone);
-        final String timestampString = df.format(Instant.ofEpochMilli(timeStampMillis));
-
-        return timestampString;
+        debugBaggageItems(messagePrefix,
+            operationName,
+            implementation);
     }
 
     /**
@@ -114,16 +93,106 @@ public final class Debug {
     }
 
     /**
-     * Print a debug message.
+     * Get the timestamp for a message.
+     * @return
+     *          The timestamp in the format "{@code HH:mm:ss.SSS}".
+     */
+    public static String timestamp() {
+        final Instant instant = Instant.now();
+        final long timeStampMillis = instant.toEpochMilli();
+        final ZoneId zone = ZoneId.systemDefault();
+        final DateTimeFormatter df = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(zone);
+        final String timestampString = df.format(Instant.ofEpochMilli(timeStampMillis));
+
+        return timestampString;
+    }
+
+    /**
+     * Debug the baggage items.
+     * @param messagePrefix
+     *          The message prefix.
      * @param operationName
      *          The name of the operation in progress.
-     * @param messagePrefix
-     *          The prefix for the message.
-     * @param message
-     *          The message to print.
+     * @param implementation
+     *          The {@code Span} implementation.
      */
-    public static void debug(final String operationName, final String messagePrefix, final String message) {
-        final String prefix = timestamp() + "  " + operationName + "  " + messagePrefix + ": ";
-        System.out.println(prefix + message);
+    private static void debugBaggageItems(final String messagePrefix,
+                                          final String operationName,
+                                          final io.jaegertracing.internal.JaegerSpan implementation) {
+        final io.jaegertracing.internal.JaegerSpanContext spanContext = implementation.context();
+
+        final Iterable<Entry<String, String>> baggageItems = spanContext.baggageItems();
+
+        boolean hasBaggage = false;
+
+        for (final Entry<String, String> baggageItem : baggageItems) {
+
+            if (!hasBaggage) {
+                debug(operationName, messagePrefix, "span baggage items are:");
+                hasBaggage = true;
+            }
+
+            final String message = baggageItem.getKey() + " = " + baggageItem.getValue();
+            debug(operationName, messagePrefix, message);
+        }
+
+        if (!hasBaggage) {
+            debug(operationName, messagePrefix, "The span has no baggage items.");
+        }
+    }
+
+    /**
+     * Debug the Span References.
+     * @param messagePrefix
+     *          The message prefix.
+     * @param operationName
+     *          The name of the operation in progress.
+     * @param implementation
+     *          The {@code Span} implementation.
+     */
+    private static void debugSpanReferences(final String messagePrefix,
+                                            final String operationName,
+                                            final io.jaegertracing.internal.JaegerSpan implementation) {
+        final List<io.jaegertracing.internal.Reference> references = implementation.getReferences();
+
+        if (references.size() != 0) {
+            debug(operationName, messagePrefix, "span references are:");
+            references.stream().forEach(r -> debug(operationName, messagePrefix, r.toString()));
+        }
+        else {
+            debug(operationName, messagePrefix, "There are no references in the span.");
+        }
+    }
+
+    /**
+     * Debug the tags in the {@code Span}.
+     * @param messagePrefix
+     *          The message prefix.
+     * @param operationName
+     *          The name of the operation in progress.
+     * @param implementation
+     *          The {@code Span} implementation.
+     */
+    private static void debugSpanTags(final String messagePrefix,
+                                      final String operationName,
+                                      final io.jaegertracing.internal.JaegerSpan implementation) {
+        final Map<String, Object> tags = implementation.getTags();
+
+        if (tags.size() != 0) {
+            debug(operationName, messagePrefix, "span tags are:");
+            tags.entrySet().forEach(entry -> {
+                debug(operationName, messagePrefix, "Key : " + entry.getKey() + " : Value : " + entry.getValue());
+            });
+        }
+        else {
+            debug(operationName, messagePrefix, "There are no tags in the span.");
+        }
+    }
+
+    /**
+     * Cannot instantiate.
+     */
+    private Debug() {
+        super();
     }
 }

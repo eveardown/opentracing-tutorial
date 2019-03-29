@@ -1,7 +1,7 @@
 /**
  * Copyright Estafet Ltd. 2019. All rights reserved.
  */
-package lesson03.exercise;
+package lesson04.exercise;
 
 import java.io.IOException;
 
@@ -21,56 +21,44 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Propagate the tracing context to the formatter and publisher microservices.
+ * Propagate the tracing context and baggage to the formatter and publisher microservices.
  *
- * <p>In {@link lesson03.exercise.HelloMicroServicesAppStep1}, the tracing context is not propagated to the new
- * formatter and publisher microservices.</p>
+ * <p>The {@link lesson03.exercise.HelloMicroServicesAppStep2} application propagates only the span context to
+ * the microservices.</p>
  *
- * <p>This means there is a trace with three spans, all from hello-world service. Now, there are two microservices
- * participating in the transaction, which need to be in the trace. To continue the trace over the process boundaries
- * and RPC calls, the OpenTracing API provides two methods on the {@link io.opentracing.Tracer} interface to do that:</p>
+ * <p>Propagating the span context can be generalised to propagate more than the span context. OpenTracing
+ * instrumentation, supports general purpose distributed context propagation where some metadata is associated with the
+ * transaction and made available anywhere in the distributed call graph. In OpenTracing, this metadata is called
+ * "baggage", to highlight the fact that it is carried by all RPC requests, just like baggage.</p>
  *
- * <ul>
- * <li>{@link io.opentracing.Tracer#inject(io.opentracing.SpanContext, Format, Object)}, and </li>
- * <li>{@link io.opentracing.Tracer#extract(Format, Object)}.
- * </ul>
+ * <p>This example is based on {@link lesson03.exercise.HelloMicroServicesAppStep2} and will use baggage to customise
+ * the greeting <em>without</em> changing the public API of the {@link Formatter} service.</p>
  *
- * <p>The {@code format} parameter refers to one of the three standard encodings the OpenTracing API defines:</p>
+ * <p>Changing the public API of the {@code Formatter} service would implement the same functionality. However, that is
+ * exactly the point of this exercise - no changes are needed to any APIs on the path from the root span in
+ * {@link HelloBaggageApp} to the server-side span in the {@link Formatter} service, three levels down.</p>
  *
- * <dl>
- *  <dt>TEXT_MAP</dt>
- *  <dd>The span context is encoded as a collection of string key-value pairs.</dd>
- *  <dt>BINARY</dt>
- *  <dd>The span context is encoded as an opaque byte array.</dd>
- *  <dt>HTTP_HEADERS</dt>
- *  <dd>This is similar to {@code TEXT_MAP}, except that the keys must be legal HTTP header names, i.e. encoded in
- *  accordance with the last paragraph of
- *  <a href="https://tools.ietf.org/html/rfc7230#section-3.2.4">section 3.2.4 of RFC 7230</a>.</dd>
-   </dl>
- * <p>This example is based on {@link lesson03.exercise.HelloMicroServicesAppStep1} with the following changes:</p>
+ * <p>If this were a much larger application with a much deeper call tree, say 10 levels (i.e. eight services between
+ * this class and the {@code Formatter} service), using baggage would require
+ * <em>no</em> changes to any of the eight services in the path. If changing the API were the only way to pass the data,
+ * all eight services in the path would need to be modified.</p>
+ * <p>Some of the possible applications of baggage include:</p>
  *
  * <ul>
- *   <li>The active tracing context is propagated to the formatter and publisher microservices.</li>
+ * <li>Passing the tenancy in multi-tenant systems.</li>
+ * <li>Passing identity of the top caller.</li>
+ * <li>Passing fault injection instructions for chaos engineering.</li>
+ * <li>Passing request-scoped dimensions for other monitoring data, such as separating metrics for production and test
+ * traffic.</li>
  * </ul>
  *
- * <p>Run the example, for example:</p>
- * <pre>
- *     $ ./run.sh lesson03.exercise.HelloMicroServicesAppStep2 Steve
- * </pre>
- *
- * <p>The output should be like this:</p>
- * <pre>
- * 11:15:13.344 [main] INFO com.uber.jaeger.reporters.LoggingReporter - Span reported: 9e6d94e89ab4dcf6:31e67bd79f091eff:9e6d94e89ab4dcf6:1 - formatString
- * Hello, Steve!
- * 11:15:13.346 [main] INFO com.uber.jaeger.reporters.LoggingReporter - Span reported: 9e6d94e89ab4dcf6:23caeb944bd614a0:9e6d94e89ab4dcf6:1 - formatString
- * 11:15:13.346 [main] INFO com.uber.jaeger.reporters.LoggingReporter - Span reported: 9e6d94e89ab4dcf6:9e6d94e89ab4dcf6:0:1 - say-hello
- * </pre>
- *
- * <p>One hierarchical trace for the {@code hello-world} service should appear in the Jaeger UI at
- * {@code http://${ip_address}:16686}.</p>
- *
+ * <p>
+ * Although baggage is a very powerful mechanism, it is also dangerous. Baggage is passed over the wire for
+ * <em>every</em> call in a path, so it must be used with caution. Jaeger client libraries implement centrally
+ * controlled baggage restrictions so that only blessed services can put blessed keys in the baggage, and allows
+ * restrictions on the value length.</p>
  */
-public class HelloMicroServicesAppStep2 {
+public class HelloBaggageApp {
 
     /**
      * Program entry point.
@@ -78,14 +66,15 @@ public class HelloMicroServicesAppStep2 {
      *          The program arguments. The only argument is the parameter for the message.
      */
     public static void main(final String[] args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException("Expecting one argument");
+        if (args.length != 2) {
+            throw new IllegalArgumentException("Expecting two arguments.");
         }
         final String helloTo = args[0];
+        final String greeting = args[1];
 
-        // No need to close a Tracer - when it is built a shutdown hook to close it is added to the Runtime.
+        // No need to close a Tracer - when it is built, a shutdown hook to close it is added to the Runtime.
         final Tracer tracer = Tracing.init("hello-world");
-        new HelloMicroServicesAppStep2(tracer).sayHello(helloTo);
+        new HelloBaggageApp(tracer).sayHello(helloTo, greeting);
     }
 
     /**
@@ -103,7 +92,7 @@ public class HelloMicroServicesAppStep2 {
      * @param theTracer
      *          The tracer to use.
      */
-    private HelloMicroServicesAppStep2(final Tracer theTracer) {
+    private HelloBaggageApp(final Tracer theTracer) {
         tracer = theTracer;
         client = new OkHttpClient();
     }
@@ -217,14 +206,18 @@ public class HelloMicroServicesAppStep2 {
      *
      * @param helloTo
      *          The parameter for the message.
+     * @param greeting
+     *          The custom greeting.
      */
-    private void sayHello(final String helloTo) {
+    private void sayHello(final String helloTo, final String greeting) {
 
         // Create the active Span in a Scope.
         try (final Scope scope = tracer.buildSpan("say-hello").startActive(true)) {
 
             // Tag the span with the message parameter.
-            scope.span().setTag("hello-to", helloTo);
+            final Span activeSpan = scope.span();
+            activeSpan.setTag("hello-to", helloTo);
+            activeSpan.setBaggageItem("greeting", greeting);
 
             Debug.debugScope("sayHello", "client:sayHello", "Operation start.", scope);
 

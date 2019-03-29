@@ -6,14 +6,31 @@ import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import lib.Tracing;
 
+/**
+ * This example uses distributed tracing.
+ *
+ */
 public class HelloActive {
 
+    /**
+     * The {@link Tracer} for distributed tracing.
+     */
     private final Tracer tracer;
 
-    private HelloActive(final Tracer tracer) {
-        this.tracer = tracer;
+    /**
+     * Construct from a {@link Tracer}.
+     * @param theTracer
+     *          The tracer to use.
+     */
+    private HelloActive(final Tracer theTracer) {
+        tracer = theTracer;
     }
 
+    /**
+     * Format and display the message.
+     * @param helloTo
+     *          The recipient of the greeting.
+     */
     private void sayHello(final String helloTo) {
         try (Scope scope = tracer.buildSpan("say-hello").startActive(true)) {
             scope.span().setTag("hello-to", helloTo);
@@ -23,6 +40,13 @@ public class HelloActive {
         }
     }
 
+    /**
+     * Format the greeting message.
+     * @param helloTo
+     *          The recipient of the greeting.
+     * @return
+     *          The formatted greeting message.
+     */
     private  String formatString(final String helloTo) {
         try (Scope scope = tracer.buildSpan("formatString").startActive(true)) {
             final String helloStr = String.format("Hello, %s!", helloTo);
@@ -31,6 +55,11 @@ public class HelloActive {
         }
     }
 
+    /**
+     * Display the greeting message.
+     * @param helloStr
+     *          The greeting message to display.
+     */
     private void printHello(final String helloStr) {
         try (Scope scope = tracer.buildSpan("printHello").startActive(true)) {
             System.out.println(helloStr);
@@ -38,6 +67,12 @@ public class HelloActive {
         }
     }
 
+    /**
+     * The program entry point.
+     * @param args
+     *          The command line arguments. The only argument is the recipient of the greeting.
+     *
+     */
     public static void main(final String[] args) {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expecting one argument");

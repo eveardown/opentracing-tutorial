@@ -1,7 +1,7 @@
 /**
  * Copyright Estafet Ltd. 2019. All rights reserved.
  */
-package lesson03.exercise;
+package lib;
 
 /**
  * The service ports.

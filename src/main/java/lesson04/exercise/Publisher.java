@@ -1,12 +1,13 @@
 /**
  * Copyright Estafet Ltd. 2019. All rights reserved.
  */
-package lesson03.exercise;
+package lesson04.exercise;
 
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
 import io.opentracing.Tracer;
+import lesson03.exercise.PublisherStep1;
 import lib.ServicePorts;
 import lib.Tracing;
 
@@ -27,7 +28,7 @@ import lib.Tracing;
  * </pre>
  *
  */
-public class PublisherStep2 extends Application<Configuration> {
+public class Publisher extends Application<Configuration> {
 
     /**
      * The distributed tracing tracer.
@@ -39,7 +40,7 @@ public class PublisherStep2 extends Application<Configuration> {
      * @param theTracer
      *          The tracer to use.
      */
-    private PublisherStep2(final Tracer theTracer) {
+    private Publisher(final Tracer theTracer) {
         tracer = theTracer;
     }
 
@@ -55,7 +56,7 @@ public class PublisherStep2 extends Application<Configuration> {
      */
     @Override
     public void run(final Configuration configuration, final Environment environment) throws Exception {
-        environment.jersey().register(new PublisherStep2Resource(tracer));
+        environment.jersey().register(new PublisherResource(tracer));
     }
 
     /**
@@ -74,6 +75,6 @@ public class PublisherStep2 extends Application<Configuration> {
         // the Jaeger agent.
 
         final Tracer tracer = Tracing.init("publisher");
-        new PublisherStep2(tracer).run(args);
+        new Publisher(tracer).run(args);
     }
 }
